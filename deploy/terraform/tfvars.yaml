@@ -1,0 +1,12 @@
+steps:
+    - id: 'Changing tfvars'
+      name: 'ubuntu'
+      entrypoint: 'bash'
+      args:  ['./deploy/terraform/changetfvars.sh', '$BRANCH_NAME']
+      env:
+        - 'PROJECT=$PROJECT_ID'
+        - 'CLOUD_SERVICE_NAME=$TRIGGER_NAME'
+        - 'CONTAINER_IMAGE=gcr.io/$PROJECT_ID/$TRIGGER_NAME:$COMMIT_SHA'
+        - 'STATE_BUCKET=$_STATE_BUCKET'
+        - 'STATE_BUCKET_PREFIX=$REPO_NAME/$BRANCH_NAME'
+        - 'REGION=$_REGION'
