@@ -55,7 +55,3 @@ steps:
   entrypoint: sh
   id: Terraform Apply
   name: hashicorp/terraform:0.15.1
-availableSecrets:
-  secretManager:
-    - versionName: projects/$PROJECT_ID/secrets/NPM_TOKEN/versions/latest
-      env: 'NPM_TOKEN'
