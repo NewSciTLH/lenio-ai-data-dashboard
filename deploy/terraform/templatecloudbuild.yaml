@@ -1,0 +1,65 @@
+    - id: 'Docker Build & Publish'
+      name: 'gcr.io/kaniko-project/executor:latest'
+      args:
+      - --destination=gcr.io/$PROJECT_ID/$TRIGGER_NAME:$COMMIT_SHA
+      - --cache=true
+      - --cache-ttl=10h
+
+    - id: 'Show Branch Name'
+      name: 'alpine'
+      entrypoint: 'sh'
+      args: 
+      - '-c'
+      - | 
+          echo "***********************"
+          echo "$BRANCH_NAME"
+          echo "***********************"
+
+    - id: 'Terraform Init'
+      name: 'hashicorp/terraform:0.15.1'
+      entrypoint: 'sh'
+      args: 
+      - '-c'
+      - |
+          if [ -d "deploy/terraform/$BRANCH_NAME/" ]; then
+            cd deploy/terraform/$BRANCH_NAME/
+            terraform init \
+              -backend-config "bucket=$_STATE_BUCKET" \
+              -backend-config "prefix=$REPO_NAME/$BRANCH_NAME"
+          else
+            exit 1
+          fi 
+    
+    # [START tf-plan]
+    - id: 'Terraform Plan'
+      name: 'hashicorp/terraform:0.15.1'
+      entrypoint: 'sh'
+      args: 
+      - '-c'
+      - | 
+          if [ -d "deploy/terraform/$BRANCH_NAME/" ]; then
+            cd deploy/terraform/$BRANCH_NAME/
+            terraform plan -compact-warnings
+          else
+            exit 1
+          fi 
+    # [END tf-plan]
+    
+    # [START tf-apply]
+    - id: 'Terraform Apply'
+      name: 'hashicorp/terraform:0.15.1'
+      entrypoint: 'sh'
+      args: 
+      - '-c'
+      - | 
+          if [ -d "deploy/terraform/$BRANCH_NAME/" ]; then
+            cd deploy/terraform/$BRANCH_NAME/    
+            terraform apply -auto-approve -compact-warnings
+          else
+            exit 1
+          fi
+    # [END tf-apply]
+
+options:
+  substitution_option: 'ALLOW_LOOSE'
+  # machineType: 'E2_HIGHCPU_8'

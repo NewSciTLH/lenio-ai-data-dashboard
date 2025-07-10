@@ -1,0 +1,61 @@
+options:
+  substitution_option: ALLOW_LOOSE
+steps:
+- args:
+  - ./deploy/terraform/changetfvars.sh
+  - $BRANCH_NAME
+  entrypoint: bash
+  env:
+  - PROJECT=$PROJECT_ID
+  - CLOUD_SERVICE_NAME=$TRIGGER_NAME
+  - CONTAINER_IMAGE=gcr.io/$PROJECT_ID/$TRIGGER_NAME:$COMMIT_SHA
+  - STATE_BUCKET=$_STATE_BUCKET
+  - STATE_BUCKET_PREFIX=$REPO_NAME/$BRANCH_NAME
+  - REGION=$_REGION
+  
+  id: Changing tfvars
+  name: ubuntu
+- args:
+  - --destination=gcr.io/$PROJECT_ID/$TRIGGER_NAME:$COMMIT_SHA
+  - --cache=true
+  - --cache-ttl=10h
+  id: Docker Build & Publish
+  name: gcr.io/kaniko-project/executor:v1.6.0
+- args:
+  - -c
+  - 'echo "***********************"
+
+    echo "$BRANCH_NAME"
+
+    echo "***********************"
+
+    '
+  entrypoint: sh
+  id: Show Branch Name
+  name: alpine
+- args:
+  - -c
+  - "if [ -d \"deploy/terraform/$BRANCH_NAME/\" ]; then\n  cd deploy/terraform/$BRANCH_NAME/\n\
+    \  terraform init \\\n    -backend-config \"bucket=$_STATE_BUCKET\" \\\n    -backend-config\
+    \ \"prefix=$REPO_NAME/$BRANCH_NAME\"\nelse\n  exit 1\nfi \n"
+  entrypoint: sh
+  id: Terraform Init
+  name: hashicorp/terraform:0.15.1
+- args:
+  - -c
+  - "if [ -d \"deploy/terraform/$BRANCH_NAME/\" ]; then\n  cd deploy/terraform/$BRANCH_NAME/\n\
+    \  terraform plan -compact-warnings\nelse\n  exit 1\nfi \n"
+  entrypoint: sh
+  id: Terraform Plan
+  name: hashicorp/terraform:0.15.1
+- args:
+  - -c
+  - "if [ -d \"deploy/terraform/$BRANCH_NAME/\" ]; then\n  cd deploy/terraform/$BRANCH_NAME/\
+    \    \n  terraform apply -auto-approve -compact-warnings\nelse\n  exit 1\nfi\n"
+  entrypoint: sh
+  id: Terraform Apply
+  name: hashicorp/terraform:0.15.1
+availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/NPM_TOKEN/versions/latest
+      env: 'NPM_TOKEN'
