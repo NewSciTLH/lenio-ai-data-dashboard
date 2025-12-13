@@ -20,7 +20,7 @@
     "eslint": "8.31.0",
     "eslint-config-next": "^13.1.1",
     "lodash.isequal": "^4.5.0",
-    "next": "^14.2.30",
+    "next": "^14.2.35",
     "next-transpile-modules": "^10.0.0",
     "papaparse": "^5.3.2",
     "prettier": "^2.8.3",
